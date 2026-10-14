@@ -32,3 +32,9 @@ fi
 echo "正在替换 luci-app-wechatpush 为 aguowork 版本..."
 rm -rf feeds/luci/applications/luci-app-wechatpush
 git clone --depth=1 https://github.com/aguowork/luci-app-wechatpush.git feeds/luci/applications/luci-app-wechatpush
+
+# 添加 WeChatPush 流量统计依赖 wrtbwmon。
+echo "正在添加 WeChatPush 流量监控依赖 wrtbwmon..."
+git clone --depth=1 https://github.com/brvphoenix/wrtbwmon.git package/wrtbwmon-source
+mv package/wrtbwmon-source/wrtbwmon package/wrtbwmon
+rm -rf package/wrtbwmon-source
