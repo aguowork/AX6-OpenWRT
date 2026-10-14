@@ -1,4 +1,4 @@
-name: Build OpenWRT for AX6-NSS
+name: Build AX6 ImmortalWrt NSS
 
 on:
   workflow_dispatch:
@@ -6,9 +6,10 @@ on:
 env:
   REPO_URL: https://github.com/VIKINGYFY/immortalwrt.git
   REPO_BRANCH: main
-  CONFIG_FILE: AX6-IPQ/.config
-  DIY_SH: AX6-IPQ/diy.sh
-  FILES: AX6-IPQ/files
+  CONFIG_FILE: config/AX6immortalwrt/ax6.config
+  DIY1_SH: diy/AX6immortalwrt/diy1.sh
+  DIY2_SH: diy/AX6immortalwrt/diy2.sh
+  FILES: files/AX6immortalwrt
   TZ: Asia/Shanghai
 
 jobs:
@@ -106,22 +107,28 @@ jobs:
       uses: stupidloud/cachewrtbuild@main
       with:
         ccache: 'true'
-        mixkey: AX6-NSS-${{ env.REPO_BRANCH }}
+        mixkey: AX6-ImmortalWrt-NSS-${{ env.REPO_BRANCH }}
         prefix: ${{ github.workspace }}/openwrt
         
+    - name: Prepare custom feeds
+      working-directory: ./openwrt
+      run: |
+        chmod +x "$GITHUB_WORKSPACE/$DIY1_SH"
+        "$GITHUB_WORKSPACE/$DIY1_SH"
+
     - name: Update & Install feeds
       working-directory: ./openwrt
       run: |
         ./scripts/feeds update -a
         ./scripts/feeds install -a
 
-    - name: Load custom config
+    - name: Load custom files and config
       run: |
-        [ -e $FILES ] && mv $FILES openwrt/files
-        [ -e $CONFIG_FILE ] && mv $CONFIG_FILE openwrt/.config
-        chmod +x $DIY_SH
+        [ -e "$FILES" ] && mv "$FILES" openwrt/files
+        [ -e "$CONFIG_FILE" ] && mv "$CONFIG_FILE" openwrt/.config
+        chmod +x "$DIY2_SH"
         cd openwrt
-        $GITHUB_WORKSPACE/$DIY_SH
+        "$GITHUB_WORKSPACE/$DIY2_SH"
 
     # - name: SSH connect to Actions
       # uses: P3TERX/ssh2actions@main
@@ -150,7 +157,7 @@ jobs:
       # uses: actions/upload-artifact@master
       # if: always()
       # with:
-        # name: AX6-NSS
+        # name: AX6-ImmortalWrt-NSS
         # path: openwrt/bin/targets
     - name: cp output to upload file
       run: |
@@ -165,27 +172,28 @@ jobs:
     - name: Upload OpenWrt Firmware to Release
       uses: ncipollo/release-action@main
       with:
-        tag: AX6_NSS_${{ env.CURRENT_DATE }}
+        tag: AX6_ImmortalWrt_NSS_${{ env.CURRENT_DATE }}
         artifacts: upload/*
         allowUpdates: true
         token: ${{ secrets.GITHUB_TOKEN }}
         body: |
-          ## Redmi AX6 · ImmortalWrt (NSS)
+          ## Redmi AX6 - ImmortalWrt (NSS)
 
           基于 [VIKINGYFY/immortalwrt](https://github.com/VIKINGYFY/immortalwrt) 构建，启用 NSS 硬件加速。
 
           > 首次使用建议 **清空配置全新刷写**（stock 大分区机型）。
 
-          ### 预装插件
-          - PassWall（Xray + Sing-box）
-          - DDNS-Go
-          - Socat
-          - UPnP
-          - KMS
-          - EasyTier
-          - ZeroTier
-          - WireGuard
-          - frpc
+          ### 预装插件（按 `config/AX6immortalwrt/ax6.config`）
+          - AdGuard Home (`luci-app-adguardhome`)：DNS 广告过滤
+          - OAF (`luci-app-oaf`)：应用过滤与上网管控
+          - ARP Bind (`luci-app-arpbind`)：IP/MAC 绑定
+          - Auto Reboot (`luci-app-autoreboot`)：计划重启
+          - DDNSTO (`luci-app-ddnsto`)：远程访问
+          - WeChat Push (`luci-app-wechatpush`)：微信推送，含流量监控、主机信息和本地磁盘信息
+          - WOL (`luci-app-wol`)：网络唤醒
+          - ZeroTier (`luci-app-zerotier`)：虚拟组网
+          - UPnP (`luci-app-upnp`)：端口映射
+          - ttyd (`luci-app-ttyd`)：网页终端
 
           ### 固件文件
           | 后缀 | 用途 |
@@ -196,7 +204,7 @@ jobs:
           ### 默认登录
           | 项 | 值 |
           | --- | --- |
-          | 地址 | `http://192.168.1.1` |
+          | 地址 | `http://192.168.31.1` |
           | 账户 | `root` |
           | 密码 | 空（首次登录后请自行设置） |
 
